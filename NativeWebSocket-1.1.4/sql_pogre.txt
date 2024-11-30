@@ -1,0 +1,42 @@
+CREATE TABLE players (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100) UNIQUE,
+    password_hash VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_login TIMESTAMP,
+    total_races INT DEFAULT 0,
+    wins INT DEFAULT 0,
+    best_time FLOAT DEFAULT NULL
+);
+
+-- Bảng races (các cuộc đua)
+CREATE TABLE races (
+    id SERIAL PRIMARY KEY,
+    race_code VARCHAR(10) UNIQUE NOT NULL,
+    status VARCHAR(20) DEFAULT 'waiting', -- waiting, in_progress, finished
+    start_time TIMESTAMP,
+    end_time TIMESTAMP,
+    max_players INT DEFAULT 4,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Bảng race_participants (người tham gia đua)
+CREATE TABLE race_participants (
+    id SERIAL PRIMARY KEY,
+    race_id INT REFERENCES races(id),
+    player_id INT REFERENCES players(id),
+    finish_time FLOAT,
+    position INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(race_id, player_id)
+);
+
+-- Bảng leaderboard
+CREATE TABLE leaderboard (
+    id SERIAL PRIMARY KEY,
+    player_id INT REFERENCES players(id),
+    score INT DEFAULT 0,
+    rank INT,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
