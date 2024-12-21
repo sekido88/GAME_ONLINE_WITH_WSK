@@ -39,9 +39,15 @@ wss.on("connection", function (ws) {
 
     const clientId = uuid();
     ws.id = clientId;
+
     clients.set(clientId, ws);
-    console.log(clients);
+   
     console.log(`Assigned client ID: ${clientId}`);
+
+    sendToClient(ws, {
+      action: "connected",
+      playerId: clientId,
+    });
 
     ws.on("message", function (data) {
       try {
@@ -139,7 +145,7 @@ function handleJoinRoom(ws, message) {
 
   room.players.set(ws.id, {
     ws: ws,
-    name: message.name,
+    name: message.playerName,
     playerId: ws.id,
     roomId: message.roomId,
     isReady: false,
@@ -217,14 +223,13 @@ function handlePlayerReady(ws, message) {
 
   const player = room.players.get(ws.id);
   if (player) {
-    player.isReady = message.data.isReady;
+    player.isReady = message.isReady;
 
     broadcastToRoom(room, {
       action: "player_ready",
       players: getPlayersData(room),
     });
 
-    checkGameStart(room);
   }
 }
 
@@ -236,7 +241,7 @@ function broadcastToRoom(room, message, excludeClientId = null) {
   });
 }
 
-function handleStartGame(ws, message) {
+function handleStartRace(ws, message) {
   const room = rooms.get(ws.roomId);
   if (!room || room.host !== ws.id) return;
 
@@ -245,14 +250,14 @@ function handleStartGame(ws, message) {
 
   broadcastToRoom(room, {
     action: "game_starting",
+    players: getPlayersData(room),
   });
 
-  // Sau 3 giây, bắt đầu game
   setTimeout(() => {
     room.isRacing = true;
     broadcastToRoom(room, {
       action: "game_started",
-      players: room.players,
+      players: getPlayersData(room),
     });
   }, 3000);
 }

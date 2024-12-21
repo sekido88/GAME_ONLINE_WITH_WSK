@@ -14,8 +14,7 @@ public class NetworkManager : MonoBehaviour
     [SerializeField] private string serverUrl = "ws://localhost:8080";
     [SerializeField] private GameObject playerPrefab;
 
-    private string playerId;
-    private Dictionary<string, GameObject> players = new Dictionary<string, GameObject>();
+
 
 
     public System.Action<string> OnConnected;
@@ -28,7 +27,10 @@ public class NetworkManager : MonoBehaviour
 
     public string CurrentRoomId { get; private set; }
     public bool IsHost { get; private set; }
+    public string PlayerId { get; private set; }
 
+    private float sendInterval = 0.1f;
+    private float timeSinceLastSend = 0f;
     private void Awake()
     {
         if (instance == null)
@@ -53,9 +55,6 @@ public class NetworkManager : MonoBehaviour
 
         webSocket.OnOpen += () =>
         {
-            Debug.Log("Connected to server");
-            playerId = System.Guid.NewGuid().ToString();
-            OnConnected?.Invoke(playerId);
 
         };
 
@@ -81,8 +80,8 @@ public class NetworkManager : MonoBehaviour
         switch (message.action)
         {
             case "connected":
-                playerId = message.playerId;
-                Debug.Log($"Received player ID: {playerId}");
+                PlayerId = message.playerId;
+                Debug.Log($"Received player ID: {PlayerId}");
                 break;
             case "room_created":
                 HandleRoomCreated(message);
@@ -90,8 +89,22 @@ public class NetworkManager : MonoBehaviour
             case "room_joined":
                 HandleRoomJoined(message);
                 break;
+            case "game_starting":
+                HandleGameStarting(message);
+                break;
+
+
+            case "game_started":
+                HandleGameStarted(message);
+                break;
             case "player_joined":
                 HandlePlayerJoined(message);
+                break;
+            case "player_ready":
+                HandlePlayerReady(message);
+                break;
+            case "player_moved":
+                HandlePlayerMoved(message);
                 break;
             case "player_left":
                 HandlePlayerLeft(message);
@@ -104,7 +117,7 @@ public class NetworkManager : MonoBehaviour
 
     private void HandlePlayerCheckpoint(NetworkMessage message)
     {
-        if (players.TryGetValue(message.playerId, out GameObject playerObj))
+        if (GameManager.Instance.players.TryGetValue(message.playerId, out GameObject playerObj))
         {
             PlayerController controller = playerObj.GetComponent<PlayerController>();
             // controller.CurrentCheckpoint = message.currentCheckpoint;
@@ -117,9 +130,11 @@ public class NetworkManager : MonoBehaviour
     {
         CurrentRoomId = message.roomId;
         IsHost = message.isHost;
-        UIManager.Instance.UpdatePlayerList(message.players);
-        Debug.Log($"Room created: {CurrentRoomId}");
         UIManager.Instance.ShowRoomPanel(CurrentRoomId);
+
+  
+        GameManager.Instance.SpawnPlayer(message.playerId, Quaternion.identity);
+     
     }
 
     private void HandleRoomJoined(NetworkMessage message)
@@ -127,49 +142,52 @@ public class NetworkManager : MonoBehaviour
         CurrentRoomId = message.roomId;
         IsHost = message.isHost;
         UIManager.Instance.ShowRoomPanel(CurrentRoomId);
-        UIManager.Instance.UpdatePlayerList(message.players);
         Debug.Log($"Joined room: {CurrentRoomId}");
     }
 
     private void HandleGameStarting(NetworkMessage message)
     {
-        // UIManager.Instance.StartCountdown(3); // 3 giây đếm ngược
+        UIManager.Instance.ShowOffRoomPanel();
+        GameManager.Instance.StartCountdown();
+    }
+
+    private void HandleGameStarted(NetworkMessage message)
+    {
+        Debug.Log("Game has started!");
+        GameManager.Instance.StartRace();
     }
 
     private void HandlePlayerJoined(NetworkMessage message)
     {
-        SpawnPlayer(message.playerId, message.position, message.rotation);
-        UIManager.Instance.UpdatePlayerList(message.players);
+
+        foreach (var player in message.players)
+        {
+            if(!GameManager.Instance.players.ContainsKey(player.id))
+                GameManager.Instance.SpawnPlayer(player.id, player.rotation);
+        }
         Debug.Log($"Player joined: {message.playerId}");
     }
 
-    private void SpawnPlayer(string playerId, Vector3 position, Quaternion rotation)
+    private void HandlePlayerReady(NetworkMessage message)
     {
-        if (!players.ContainsKey(playerId))
-        {
-            GameObject playerObj = Instantiate(playerPrefab, position, rotation);
-            PlayerController controller = playerObj.GetComponent<PlayerController>();
-            controller.Initialize(playerId, $"Player_{playerId.Substring(0, 4)}", playerId == this.playerId);
-            players.Add(playerId, playerObj);
-        }
+        Debug.Log($"Player {message.playerId} ready status: {message.isReady}");
     }
-
 
     private void HandlePlayerLeft(NetworkMessage message)
     {
-        if (players.ContainsKey(message.playerId))
+        if (GameManager.Instance.players.ContainsKey(message.playerId))
         {
-            Destroy(players[message.playerId]);
-            players.Remove(message.playerId);
+            Destroy(GameManager.Instance.players[message.playerId]);
+            GameManager.Instance.players.Remove(message.playerId);
         }
-        UIManager.Instance.UpdatePlayerList(message.players);
+
         Debug.Log($"Player left: {message.playerId}");
     }
     private void HandlePlayerMoved(NetworkMessage message)
     {
-        if (players.TryGetValue(message.playerId, out GameObject playerObj))
+        if (GameManager.Instance.players.TryGetValue(message.playerId, out GameObject playerObj))
         {
-            if (message.playerId != playerId)
+            if (message.playerId != PlayerId)
             {
                 playerObj.transform.position = message.position;
                 playerObj.transform.rotation = message.rotation;
@@ -184,14 +202,14 @@ public class NetworkManager : MonoBehaviour
             NetworkMessage messageObj = new NetworkMessage
             {
                 action = action,
-                playerId = playerId
+                playerId = PlayerId
             };
 
 
             switch (action)
             {
                 case "create_room":
-                    if(data.ContainsKey("playerName")) 
+                    if (data.ContainsKey("playerName"))
                     {
                         messageObj.playerName = data["playerName"].ToString();
                     };
@@ -201,15 +219,18 @@ public class NetworkManager : MonoBehaviour
                     if (data != null && data.ContainsKey("roomId"))
                     {
                         messageObj.roomId = data["roomId"].ToString();
-                        Debug.Log($"Joining room with ID: {messageObj.roomId}");
+                        messageObj.playerName = data["playerName"].ToString();
                     }
+                    break;
+
+                case "start_race":
                     break;
 
                 case "player_ready":
                     if (data != null && data.ContainsKey("isReady"))
                     {
                         messageObj.isReady = (bool)data["isReady"];
-                        Debug.Log($"Processing player_ready: {messageObj.isReady}");
+
                     }
                     break;
 
@@ -218,18 +239,18 @@ public class NetworkManager : MonoBehaviour
                     {
                         messageObj.position = (Vector3)data["position"];
                         messageObj.rotation = (Quaternion)data["rotation"];
-                        Debug.Log($"Processing player_moved: pos={messageObj.position}, rot={messageObj.rotation}");
+                        // Debug.Log($"Processing player_moved: pos={messageObj.position}, rot={messageObj.rotation}");
                     }
                     break;
             }
 
             string json = JsonUtility.ToJson(messageObj);
-            Debug.Log($"Final message to send: {json}");
+            // Debug.Log($"Final message to send: {json}");
 
             if (webSocket.State == WebSocketState.Open)
             {
                 await webSocket.SendText(json);
-                Debug.Log("Message sent successfully");
+                // Debug.Log("Message sent successfully");
             }
             else
             {
@@ -246,8 +267,6 @@ public class NetworkManager : MonoBehaviour
         }
     }
 
-    
-
     public void LeaveRoom()
     {
         if (!string.IsNullOrEmpty(CurrentRoomId))
@@ -256,30 +275,38 @@ public class NetworkManager : MonoBehaviour
             CurrentRoomId = null;
             IsHost = false;
             UIManager.Instance.ShowMainMenu();
+            if (GameManager.Instance.players.ContainsKey(NetworkManager.Instance.PlayerId))
+            {
+                Destroy(GameManager.Instance.players[NetworkManager.Instance.PlayerId]);
+                GameManager.Instance.players.Remove(NetworkManager.Instance.PlayerId);
+            }
         }
+
     }
 
     private void Update()
     {
-        #if !UNITY_WEBGL || UNITY_EDITOR
-                if (webSocket != null)
-                {
-                    webSocket.DispatchMessageQueue();
-                }
-        #endif
+#if !UNITY_WEBGL || UNITY_EDITOR
+        if (webSocket != null)
+        {
+            webSocket.DispatchMessageQueue();
+        }
+#endif
+        if (GameManager.Instance.isRaceStarted)
+        {
+            SendLocalPlayerPosition();
+        }
 
-        // // Gửi vị trí player local
-        // if (players.TryGetValue(playerId, out GameObject localPlayer))
-        // {
-        //     SendMessage("player_moved", new
-        //     {
-        //         playerId = playerId,
-        //         position = localPlayer.transform.position,
-        //         rotation = localPlayer.transform.rotation
-        //     });
-        // }
     }
 
+    public void SendLocalPlayerPosition()
+    {
+        if (GameManager.Instance.players.TryGetValue(PlayerId, out GameObject localPlayer))
+        {
+                SendPlayerMove(localPlayer.transform.position, localPlayer.transform.rotation);
+        }
+         
+    }
     public bool IsConnected()
     {
         return webSocket != null && webSocket.State == WebSocketState.Open;
@@ -295,14 +322,6 @@ public class NetworkManager : MonoBehaviour
         SendMessage("player_moved", data);
     }
 
-   public void SendPlayerReady(bool isReady)
-    {
-        var data = new Dictionary<string, object>
-        {
-            ["isReady"] = isReady
-        };
-        SendMessage("player_ready", data);
-    }
 
 }
 

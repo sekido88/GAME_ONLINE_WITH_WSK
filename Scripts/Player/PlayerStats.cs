@@ -29,10 +29,10 @@ public class PlayerStats : MonoBehaviour
     public void SetReady(bool ready)
     {
         isReady = ready;
-        networkManager.SendMessage("player_ready", new { 
-            playerId = playerController.PlayerId,
-            isReady = ready 
-        });
+        var data = new Dictionary<string, object>() {
+            ["isReady"] = isReady
+        };
+        networkManager.SendMessage("player_ready",data);
     }
 
     public void StartRace()

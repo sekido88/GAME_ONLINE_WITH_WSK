@@ -12,6 +12,7 @@ public class UIManager : MonoBehaviour
     [Header("Menu Panels")]
     [SerializeField] private GameObject mainMenuPanel;
     [SerializeField] private GameObject roomPanel;
+    [SerializeField] private GameObject racePanel;
 
     [Header("Main Menu")]
     [SerializeField] private Button createRoomButton;
@@ -30,6 +31,11 @@ public class UIManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI roomStatusText;
     [SerializeField] private TextMeshProUGUI playerCountText;
     [SerializeField] private Button leaveRoomButton;
+
+    [Header("Race UI")]
+    [SerializeField] private TextMeshProUGUI countdownText;
+    [SerializeField] private TextMeshProUGUI raceTimeText;
+
     private void Awake()
     {
         if (instance == null)
@@ -58,6 +64,7 @@ public class UIManager : MonoBehaviour
     {
         mainMenuPanel.SetActive(true);
         roomPanel.SetActive(false);
+        racePanel.SetActive(false);
     }
 
     public void ShowRoomPanel(string roomCode)
@@ -67,6 +74,14 @@ public class UIManager : MonoBehaviour
         roomCodeText.text = $"Room Code: {roomCode}";
 
         startRaceButton.gameObject.SetActive(NetworkManager.Instance.IsHost);
+    }
+
+    public void ShowRaceUI() {
+        racePanel.SetActive(true);
+    }
+
+    public void ShowOffRoomPanel() {
+        roomPanel.SetActive(false);
     }
 
     private void CreateRoom()
@@ -109,7 +124,12 @@ public class UIManager : MonoBehaviour
 
     private void ToggleReady()
     {
-        // Sẽ implement sau
+        PlayerStats playerStats = GameManager.Instance.GetLocalPlayerStats();
+        var data = new Dictionary<string, object>
+        {
+            ["isReady"] = !playerStats.isReady
+        };
+        playerStats.SetReady((bool)data["isReady"]);
     }
 
     private void StartRace()
@@ -128,11 +148,35 @@ public class UIManager : MonoBehaviour
             playerListText.text += $"Player: {player.name} - {(player.isReady ? "Ready" : "Not Ready")}\n";
         }
         Debug.Log("Player list updated: " + playerListText.text);
-        Debug.Log(data.ToString());
     }
 
     private void LeaveRoom()
     {
         NetworkManager.Instance.LeaveRoom();
     }
+
+    
+    public void ShowCountdown(float time)
+    {
+        countdownText.gameObject.SetActive(true);
+        UpdateCountdown(time);
+    }
+
+    public void UpdateCountdown(float timeLeft)
+    {
+        countdownText.text = timeLeft.ToString();
+        if (timeLeft <= 0)
+        {
+            countdownText.gameObject.SetActive(false);
+        }
+    }
+
+    public void UpdateRaceTime(float time)
+    {
+        int minutes = (int)(time / 60);
+        int seconds = (int)(time % 60);
+        int milliseconds = (int)((time * 100) % 100);
+        raceTimeText.text = $"{minutes:00}:{seconds:00}.{milliseconds:00}";
+    }
+
 }

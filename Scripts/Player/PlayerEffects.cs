@@ -11,11 +11,8 @@ public class PlayerEffects : MonoBehaviour
     [SerializeField] private Color normalColor = Color.white;
     [SerializeField] private Color boostColor = Color.red;
 
-    private PlayerInput playerInput;
-
     private void Awake()
     {
-        playerInput = GetComponent<PlayerInput>();
         InitializeEffects();
     }
 

@@ -1,13 +1,12 @@
-using Unity.VisualScripting;
 using UnityEngine;
-
-
+using Unity.VisualScripting;
 public class PlayerController : MonoBehaviour
 {
     [Header("Components")]
     private PlayerInput playerInput;
     private PlayerMovement playerMovement;
     private PlayerEffects playerEffects;
+    private PlayerStats playerStats;
     private Rigidbody2D rb;
 
     [Header("Player Info")]
@@ -19,6 +18,7 @@ public class PlayerController : MonoBehaviour
     public int CurrentLap { get; private set; }
     public int CurrentCheckpoint { get; private set; }
 
+
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -26,7 +26,7 @@ public class PlayerController : MonoBehaviour
         playerInput = GetComponent<PlayerInput>();
         playerMovement = GetComponent<PlayerMovement>();
         playerEffects = GetComponent<PlayerEffects>();
-
+        playerStats = GetComponent<PlayerStats>();
     }
 
     public void Initialize(string id, string name, bool isLocalPlayer)
@@ -34,6 +34,8 @@ public class PlayerController : MonoBehaviour
         PlayerId = id;
         PlayerName = name;
         IsLocalPlayer = isLocalPlayer;
+
+        this.gameObject.name = PlayerName;
 
         playerInput.IsLocalPlayer = isLocalPlayer;
         CurrentLap = 0;
@@ -44,11 +46,12 @@ public class PlayerController : MonoBehaviour
     {
         if (playerEffects != null)
         {
-            playerEffects.UpdateEffects(playerInput.CurrentInput.isAccelerating);
+            playerEffects.UpdateEffects(playerMovement.getIsDrifting());
         }
 
     }
 
+ 
     public void ResetPlayer()
     {
         rb.velocity = Vector2.zero;
@@ -60,6 +63,11 @@ public class PlayerController : MonoBehaviour
     public PlayerMovement GetPlayerMoment()
     {
         return playerMovement;
+    }
+
+    public PlayerStats GetPlayerStats()
+    {
+        return playerStats;
     }
 
 }

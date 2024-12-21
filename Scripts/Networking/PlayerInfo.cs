@@ -1,4 +1,6 @@
 
+using UnityEngine;
+
 [System.Serializable]
 public class PlayerInfo 
 {
@@ -6,4 +8,7 @@ public class PlayerInfo
     public string name;
     public bool isReady;
     
+    public Quaternion rotation;
+
+    public Transform transform;
 }
