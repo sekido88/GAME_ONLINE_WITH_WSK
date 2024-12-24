@@ -16,9 +16,14 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float wallDragMultiplier = 0.5f;
     [SerializeField] private LayerMask wallLayer;
 
+    [Header("Wall Collision Settings")]
+    [SerializeField] private float bounceForce = 10f;
+    [SerializeField] private float minBounceSpeed = 5f;
+    [SerializeField] private float maxBounceSpeed = 30f;
+    
+    private Collider2D[] childColliders;
+    private bool isColliding = false;
 
-    private Vector2 wallNormal;
-    private ParticleSystem driftEffect;
     private Rigidbody2D rb;
     private PlayerInput playerInput;
     private PlayerEffects playerEffects;
@@ -38,7 +43,13 @@ public class PlayerMovement : MonoBehaviour
         rb.gravityScale = 0;
         originalDrag = rb.drag;
 
-        influenceArea = this.gameObject.transform.GetChild(1).gameObject.GetComponent<InfluenceAreaTrigger>();
+        influenceArea = transform.GetChild(1).gameObject.GetComponent<InfluenceAreaTrigger>();
+   
+        Transform colliderParent = transform.Find("Collider"); 
+        if(colliderParent != null)
+        {
+            childColliders = colliderParent.GetComponentsInChildren<Collider2D>();
+        }
     }
 
     private void FixedUpdate()
@@ -82,6 +93,20 @@ public class PlayerMovement : MonoBehaviour
             Vector3 reflection = Vector3.Reflect(rb.velocity, collision.contacts[0].normal);
             rb.velocity =  reflection * rb.velocity.magnitude;
         }
+    }
+
+    public void HandleWallCollision(Collision2D collision)
+    {
+        ContactPoint2D contact = collision.GetContact(0);
+        Vector2 collisionNormal = contact.normal;
+        
+        Vector2 currentVelocity = rb.velocity;
+        Vector2 reflection = Vector2.Reflect(currentVelocity, collisionNormal);
+        
+        float currentSpeed = currentVelocity.magnitude;
+        float bounceSpeed = Mathf.Clamp(currentSpeed * bounceForce, minBounceSpeed, maxBounceSpeed);
+        
+        rb.velocity = reflection.normalized * bounceSpeed;
     }
 
     public bool getIsDrifting() {

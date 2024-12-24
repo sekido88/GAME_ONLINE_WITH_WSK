@@ -22,7 +22,7 @@ public class PlayerController : MonoBehaviour
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
-   
+
         playerInput = GetComponent<PlayerInput>();
         playerMovement = GetComponent<PlayerMovement>();
         playerEffects = GetComponent<PlayerEffects>();
@@ -42,16 +42,31 @@ public class PlayerController : MonoBehaviour
         CurrentCheckpoint = -1;
     }
 
+    public void Initialize(string id, string name, bool isLocalPlayer, GameObject socketEffect, GameObject trailEffect)
+    {
+        PlayerId = id;
+        PlayerName = name;
+        IsLocalPlayer = isLocalPlayer;
+        this.gameObject.name = PlayerName;
+        playerInput.IsLocalPlayer = isLocalPlayer;
+
+        playerEffects.SetSocketEffect(socketEffect);
+        playerEffects.SetTrailEffect(trailEffect);
+
+        CurrentLap = 0;
+        CurrentCheckpoint = -1;
+    }
+
     private void Update()
     {
         if (playerEffects != null)
         {
-            playerEffects.UpdateEffects(playerMovement.getIsDrifting());
+            // playerEffects.UpdateEffects(playerMovement.getIsDrifting());
         }
 
     }
 
- 
+
     public void ResetPlayer()
     {
         rb.velocity = Vector2.zero;
@@ -69,5 +84,13 @@ public class PlayerController : MonoBehaviour
     {
         return playerStats;
     }
+
+
+    public PlayerEffects GetPlayerEffect()
+    {
+        return playerEffects;
+    }
+
+
 
 }

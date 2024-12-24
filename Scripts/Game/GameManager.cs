@@ -8,21 +8,30 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance;
 
-    // Player 
+    [Header("Player")]
     [SerializeField] private GameObject playerPrefab;
     [SerializeField] private GameObject playersGameObject;
-    [SerializeField] private Sprite[] playerSprites;
+    [SerializeField] private List<Sprite> playerSprites;
+    public Dictionary<string, Sprite> playerSpritesDictionary = new Dictionary<string, Sprite>();
 
-    // Effect
-    [SerializeField] private GameObject socketEffectsPrefab;
-    [SerializeField] private Dictionary<string,GameObject> socketEffects = new Dictionary<string, GameObject>();
+    [Header("Player Effect")]
+    [SerializeField] private List<GameObject> socketEffectPrefabs;
+    public Dictionary<string, GameObject> socketEffects = new Dictionary<string, GameObject>();
+
+    [SerializeField] private List<GameObject> trailEffectPrefabs;
+    public Dictionary<string, GameObject> trailEffects = new Dictionary<string, GameObject>();
+
+    [Header("Point Spawn Player")]
     [SerializeField] private Transform[] spawnPoints;
     [SerializeField] private float countdownTime = 3f;
 
     public Dictionary<string, GameObject> players = new Dictionary<string, GameObject>();
-    public Dictionary<string, PlayerStats> playerStats = new Dictionary<string, PlayerStats>();  
+    public Dictionary<string, PlayerStats> playerStats = new Dictionary<string, PlayerStats>();
     public bool isRaceStarted = false;
     private float raceTimer = 0f;
+
+
+
 
     [SerializeField] private CameraFollow cameraFollow;
     private void Awake()
@@ -36,25 +45,52 @@ public class GameManager : MonoBehaviour
             Destroy(gameObject);
         }
         Application.runInBackground = true;
+        DontDestroyOnLoad(gameObject);
         cameraFollow = GameObject.Find("Camera Holder").GetComponent<CameraFollow>();
+
+        InitPlayerSprites();
         InitSocketEffects();
+        InitTrailEffects();
     }
 
-    private void InitSocketEffects() {
-        for(int i = 0; i < socketEffectsPrefab.transform.childCount; i++) {
-            Debug.Log(socketEffectsPrefab.transform.GetChild(i).name);
-            socketEffects[socketEffectsPrefab.transform.GetChild(i).name] = socketEffectsPrefab.transform.GetChild(i).gameObject;
-        }
-    }
-
-    private void Update()
+    private void InitPlayerSprites()
     {
-        if (isRaceStarted)
+        playerSpritesDictionary.Clear(); 
+        for (int i = 0; i < playerSprites.Count; i++)
         {
-            raceTimer += Time.deltaTime;
-            UIManager.Instance.UpdateRaceTime(raceTimer);
+            if (playerSprites[i] != null)
+            {
+                playerSpritesDictionary[playerSprites[i].name] = playerSprites[i];
+            
+            }
         }
     }
+
+    private void InitSocketEffects()
+    {
+        socketEffects.Clear(); 
+        for (int i = 0; i < socketEffectPrefabs.Count; i++)
+        {
+            if (socketEffectPrefabs[i] != null)
+            {
+                socketEffects[socketEffectPrefabs[i].name] = socketEffectPrefabs[i];
+              
+            }
+        }
+    }
+
+    private void InitTrailEffects()
+    {
+        trailEffects.Clear(); 
+        for (int i = 0; i < trailEffectPrefabs.Count; i++)
+        {
+            if (trailEffectPrefabs[i] != null)
+            {
+                trailEffects[trailEffectPrefabs[i].name] = trailEffectPrefabs[i];
+            }
+        }
+    }
+
     public void StartCountdown()
     {
         StartCoroutine(CountdownCoroutine());
@@ -75,7 +111,7 @@ public class GameManager : MonoBehaviour
     }
     public PlayerStats GetLocalPlayerStats()
     {
-        Debug.Log($"Getting local player stats: {NetworkManager.Instance.PlayerId}");
+
         if (playerStats.TryGetValue(NetworkManager.Instance.PlayerId, out PlayerStats stats))
         {
             return stats;
@@ -85,23 +121,38 @@ public class GameManager : MonoBehaviour
     public void SpawnPlayer(string playerId, Quaternion rotation)
     {
 
-        if(players.ContainsKey(playerId)) return;
+        if (players.ContainsKey(playerId)) return;
 
-        GameObject playerObj = Instantiate(playerPrefab, spawnPoints[players.Count].position, rotation,playersGameObject.transform);
-        
+        GameObject playerObj = Instantiate(playerPrefab, spawnPoints[players.Count].position, rotation, playersGameObject.transform);
+        playerObj.transform.localScale = Vector3.one;
+        playerObj.transform.rotation = Quaternion.Euler(0, 0, 90);
+
         PlayerController playerController = playerObj.GetComponent<PlayerController>();
         playerController.Initialize(playerId, $"Player_{playerId}", playerId == NetworkManager.Instance.PlayerId);
         players.Add(playerId, playerObj);
         playerStats.Add(playerId, playerObj.GetComponent<PlayerStats>());
 
-        if(playerId == NetworkManager.Instance.PlayerId) {
-            cameraFollow.setTarget(playerObj.transform);
-            Debug.Log("Setting camera target to local player");
-        }
 
-        Debug.Log($"Spawned player: {playerId}");
     }
 
+    public void SpawnPlayer(string playerId, Sprite sprite, GameObject socketEffect, GameObject trailEffect, Quaternion rotation)
+    {
+
+        if (players.ContainsKey(playerId)) return;
+
+        GameObject playerObj = Instantiate(playerPrefab, spawnPoints[players.Count].position, rotation, playersGameObject.transform);
+        playerObj.GetComponent<SpriteRenderer>().sprite = sprite;
+        PlayerEffects playerEffects = playerObj.GetComponent<PlayerEffects>();
+        playerEffects.SetSocketEffect(socketEffect);
+        playerEffects.SetTrailEffect(trailEffect);
+
+        PlayerController playerController = playerObj.GetComponent<PlayerController>();
+        playerController.Initialize(playerId, $"Player_{playerId}", playerId == NetworkManager.Instance.PlayerId);
+        players.Add(playerId, playerObj);
+        playerStats.Add(playerId, playerObj.GetComponent<PlayerStats>());
+
+
+    }
 
 
     public void StartRace()
@@ -112,19 +163,38 @@ public class GameManager : MonoBehaviour
         SetCanMove(true);
     }
 
-    public void SetCanMove(bool canMove) {
+    public void SetPlayerTarget()
+    {
+        cameraFollow.setTarget(players[NetworkManager.Instance.PlayerId].transform);
+    }
+
+    public void SetCanMove(bool canMove)
+    {
         foreach (var player in players)
         {
             player.Value.GetComponent<PlayerMovement>().canMove = canMove;
         }
     }
 
-    public Dictionary<string,GameObject> getSocketEffects() {
-        return socketEffects;
+    public GameObject GetPlayerPrefab()
+    {
+        return playerPrefab;
     }
 
-    public Sprite[] getPlayerSprites() {
-        return playerSprites;
+    public void SetPlayerPrefab(GameObject gameObject)
+    {
+        playerPrefab = gameObject;
     }
+
+    public void ResetPlayers()
+    {
+        foreach (var player in players.Values)
+        {
+            Destroy(player);
+        }
+        players.Clear();
+        playerStats.Clear();
+    }
+
 
 }

@@ -20,20 +20,19 @@ public class InfluenceAreaTrigger : MonoBehaviour
     {
         if (collision.CompareTag("Wall") && playerMovement.canMove)
         {
-            if (!isDrifting)
-            {
+         
                 isDrifting = true;
                 Vector2 wallNormal = (transform.position - collision.transform.position).normalized;
                 Vector2 driftDirection = Vector2.Perpendicular(wallNormal);
                 
                 float currentSpeed = playerRb.velocity.magnitude;
-                float maxDriftSpeed = 40f;
+                float maxDriftSpeed = 100f;
                 
                 if (currentSpeed < maxDriftSpeed)
                 {
                     playerRb.velocity += driftDirection * boostForce * Time.fixedDeltaTime;
                 }
-            }
+            
         }
     }
 

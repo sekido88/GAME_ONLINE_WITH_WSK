@@ -92,7 +92,7 @@ public class SplineCollider : MonoBehaviour
             edgeColliders[i * 2 + 1] = bottomEdge;
 
             // Thêm debug để kiểm tra va chạm
-            SplineColliderDebug debug = splineObj.AddComponent<SplineColliderDebug>();
+            // SplineColliderDebug debug = splineObj.AddComponent<SplineColliderDebug>();
         }
     }
 
@@ -109,15 +109,15 @@ public class SplineCollider : MonoBehaviour
 }
 
 // Thêm class debug để kiểm tra va chạm
-public class SplineColliderDebug : MonoBehaviour
-{
-    private void OnCollisionEnter2D(Collision2D collision)
-    {
-        Debug.Log($"Collision with: {collision.gameObject.name}");
-    }
+// public class SplineColliderDebug : MonoBehaviour
+// {
+//     private void OnCollisionEnter2D(Collision2D collision)
+//     {
+//         Debug.Log($"Collision with: {collision.gameObject.name}");
+//     }
 
-    private void OnTriggerEnter2D(Collider2D other)
-    {
-        Debug.Log($"Trigger with: {other.gameObject.name}");
-    }
-}
+//     private void OnTriggerEnter2D(Collider2D other)
+//     {
+//         Debug.Log($"Trigger with: {other.gameObject.name}");
+//     }
+// }
