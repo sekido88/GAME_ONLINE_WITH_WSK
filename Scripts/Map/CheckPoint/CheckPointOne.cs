@@ -8,8 +8,9 @@ public class CheckPointOne : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("Player"))
+        if (other.CompareTag("ColliderPlayer") && other.transform.parent.parent.GetComponent<PlayerController>().IsLocalPlayer)
         {
+            Debug.Log("Rat dep trai");
             CheckpointManager.Instance.PlayerHitCheckpoint(checkpointIndex);
         }
     }

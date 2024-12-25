@@ -16,7 +16,7 @@ public class RoomPanel : MonoBehaviour
     public Dictionary<string, GameObject> playersInRoom = new Dictionary<string, GameObject>();
     public void SetPlayerNameInCard(string id, string playerName)
     {
-        cardPlayers[id].transform.GetChild(1).gameObject.GetComponent<Text>().text = playerName;
+        cardPlayers[id].transform.Find("PlayerName").gameObject.GetComponent<Text>().text = playerName;
     }
 
     public void SetReadySprite(string id, bool isReady)
@@ -24,7 +24,7 @@ public class RoomPanel : MonoBehaviour
         Sprite sprite = (isReady) ? isReadySprite : notReadySprite;
         string ready = (isReady) ? "Ready" : "Not Ready";
 
-        GameObject obj = cardPlayers[id].transform.GetChild(2).gameObject;
+        GameObject obj = cardPlayers[id].transform.Find("Ready").gameObject;
         obj.GetComponent<Image>().sprite = sprite;
         obj.transform.GetChild(0).gameObject.GetComponent<Text>().text = ready;
     }

@@ -50,8 +50,11 @@ public class PlayerController : MonoBehaviour
         this.gameObject.name = PlayerName;
         playerInput.IsLocalPlayer = isLocalPlayer;
 
-        playerEffects.SetSocketEffect(socketEffect);
-        playerEffects.SetTrailEffect(trailEffect);
+        var playerEffects = GetComponent<PlayerEffects>();
+        if (playerEffects != null && socketEffect != null && trailEffect != null)
+        {
+            playerEffects.SetEffect(socketEffect, trailEffect);
+        }
 
         CurrentLap = 0;
         CurrentCheckpoint = -1;
@@ -61,7 +64,7 @@ public class PlayerController : MonoBehaviour
     {
         if (playerEffects != null)
         {
-            // playerEffects.UpdateEffects(playerMovement.getIsDrifting());
+            playerEffects.UpdateEffects(playerMovement.getIsDrifting());
         }
 
     }

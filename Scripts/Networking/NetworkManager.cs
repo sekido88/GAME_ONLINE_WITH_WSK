@@ -147,23 +147,26 @@ public class NetworkManager : MonoBehaviour
         CurrentRoomId = message.roomId;
         IsHost = message.isHost;
 
-        SelectCharacter selectCharacter = UIManager.Instance.selectCharacter;
-        string spriteName = selectCharacter.GetPlayerSprites()[selectCharacter.currentIndexes["sprite"]].name;
-        string socketEffectName = selectCharacter.GetPrefabSocketEffects()[selectCharacter.currentIndexes["socketEffect"]].name;
-        string trailEffectName = selectCharacter.GetPrefabTtrailEffects()[selectCharacter.currentIndexes["trailEffect"]].name;
+        // SelectCharacter selectCharacter = UIManager.Instance.selectCharacter;
+        // string spriteName = selectCharacter.GetPlayerSprites()[selectCharacter.currentIndexes["sprite"]].name;
+        // string socketEffectName = selectCharacter.GetPrefabSocketEffects()[selectCharacter.currentIndexes["socketEffect"]].name;
+        // string trailEffectName = selectCharacter.GetPrefabTtrailEffects()[selectCharacter.currentIndexes["trailEffect"]].name;
 
-        if (GameManager.Instance.playerSpritesDictionary.TryGetValue(spriteName, out Sprite sprite) &&
-            GameManager.Instance.socketEffects.TryGetValue(socketEffectName, out GameObject socketEffect) &&
-            GameManager.Instance.trailEffects.TryGetValue(trailEffectName, out GameObject trailEffect))
+        Debug.Log(message.spriteName);
+        Debug.Log(message.socketEffectName);
+        Debug.Log(message.trailEffectName);
+
+        if (GameManager.Instance.playerSpritesDictionary.TryGetValue(message.spriteName, out Sprite sprite) &&
+            GameManager.Instance.socketEffects.TryGetValue(message.socketEffectName, out GameObject socketEffect) &&
+            GameManager.Instance.trailEffects.TryGetValue(message.trailEffectName, out GameObject trailEffect))
         {
             GameManager.Instance.SpawnPlayer(message.playerId, sprite, socketEffect, trailEffect, Quaternion.identity);
             UIManager.Instance.ShowRoomPanel(CurrentRoomId);
             UIManager.Instance.AddPlayerInRoom(message.playerId, message.playerName, message.isReady, GameManager.Instance.players[message.playerId]);
         }
-        else
-        {
-            Debug.LogError($"Failed to find sprite or effects: {spriteName}, {socketEffectName}, {trailEffectName}");
-        }
+        
+        // CheckpointManager.Instance.localPlayer = 
+    
     }
 
     private void HandleRaceTime(NetworkMessage message)
@@ -178,6 +181,10 @@ public class NetworkManager : MonoBehaviour
     private void HandlePlayerFinished(NetworkMessage message)
     {
         UIManager.Instance.ShowWinBoardPanel();
+
+        Debug.Log(message.finishTimes[0].time);
+        Debug.Log(message.finishTimes[0].playerId);
+        
         UIManager.Instance.UpdateFinishTimes(message.finishTimes);
 
         if (message.playerId == PlayerId)

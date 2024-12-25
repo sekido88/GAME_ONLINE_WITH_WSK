@@ -87,16 +87,10 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
-     private void OnCollisionEnter2D(Collision2D collision) {
-        if(collision.gameObject.CompareTag("Wall")) {
-        
-            Vector3 reflection = Vector3.Reflect(rb.velocity, collision.contacts[0].normal);
-            rb.velocity =  reflection * rb.velocity.magnitude;
-        }
-    }
-
     public void HandleWallCollision(Collision2D collision)
     {
+        if(!canMove) return;
+
         ContactPoint2D contact = collision.GetContact(0);
         Vector2 collisionNormal = contact.normal;
         

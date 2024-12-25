@@ -15,7 +15,7 @@ public class WinBoardScript : MonoBehaviour
        GameObject card = Instantiate(prefabCardPlayer, spaceDisplay.transform);
        
        Text nameText = card.transform.Find("PlayerName").GetComponent<Text>();
-       Text timeText = card.transform.Find("Time").GetComponent<Text>();
+       Text timeText = card.transform.Find("PlayerTime").GetComponent<Text>();
        
        nameText.text = playerName;
        timeText.text = time;

@@ -100,36 +100,107 @@ public class UIManager : MonoBehaviour
     }
     private void InitEventMain()
     {
-        playButton.onClick.AddListener(ShowlistRoomPanel);
-        selectPlayerButton.onClick.AddListener(ShowSelectChatacterPanel);
+        playButton.onClick.AddListener(() =>
+        {
+            AudioManager.Instance.PlaySFX("clickButton");
+            ShowlistRoomPanel();
+        });
+
+        selectPlayerButton.onClick.AddListener(() =>
+        {
+            AudioManager.Instance.PlaySFX("clickButton");
+            ShowSelectChatacterPanel();
+        });
     }
+
     private void InitEventListRoom()
     {
-        createRoomButton.onClick.AddListener(CreateRoom);
-        joinRoomButton.onClick.AddListener(JoinRoom);
-        backMainMenu2.onClick.AddListener(ShowMainMenu);
+        createRoomButton.onClick.AddListener(() =>
+        {
+            AudioManager.Instance.PlaySFX("clickButton");
+            CreateRoom();
+        });
+
+        joinRoomButton.onClick.AddListener(() =>
+        {
+            AudioManager.Instance.PlaySFX("clickButton");
+            JoinRoom();
+        });
+
+        backMainMenu2.onClick.AddListener(() =>
+        {
+            AudioManager.Instance.PlaySFX("clickButton");
+            ShowMainMenu();
+        });
     }
+
     private void InitEventInRoom()
     {
-        readyButton.onClick.AddListener(ToggleReady);
-        startRaceButton.onClick.AddListener(StartRace);
-        leaveRoomButton.onClick.AddListener(LeaveRoom);
+        readyButton.onClick.AddListener(() =>
+        {
+            AudioManager.Instance.PlaySFX("clickButton");
+            ToggleReady();
+        });
 
+        startRaceButton.onClick.AddListener(() =>
+        {
+            AudioManager.Instance.PlaySFX("clickButton");
+            StartRace();
+        });
+
+        leaveRoomButton.onClick.AddListener(() =>
+        {
+            AudioManager.Instance.PlaySFX("clickButton");
+            LeaveRoom();
+        });
     }
+
     private void InitEventSelectCharacter()
     {
-        selectSpritePlayers.onClick.AddListener(() => SelectPartOfPlayer(selectSpritePlayers));
-        selectSocketEffects.onClick.AddListener(() => SelectPartOfPlayer(selectSocketEffects));
-        selectTrailEffects.onClick.AddListener(() => SelectPartOfPlayer(selectTrailEffects));
+        selectSpritePlayers.onClick.AddListener(() =>
+        {
+            AudioManager.Instance.PlaySFX("clickButton");
+            SelectPartOfPlayer(selectSpritePlayers);
+        });
 
-        nextPlayerSprite.onClick.AddListener(() => selectCharacter.Next(selectCharacter.GetCurrentType()));
-        previousPlayerSprite.onClick.AddListener(() => selectCharacter.Previous(selectCharacter.GetCurrentType()));
+        selectSocketEffects.onClick.AddListener(() =>
+        {
+            AudioManager.Instance.PlaySFX("clickButton");
+            SelectPartOfPlayer(selectSocketEffects);
+        });
 
-        backMainMenu.onClick.AddListener(ShowMainMenu);
+        selectTrailEffects.onClick.AddListener(() =>
+        {
+            AudioManager.Instance.PlaySFX("clickButton");
+            SelectPartOfPlayer(selectTrailEffects);
+        });
+
+        nextPlayerSprite.onClick.AddListener(() =>
+        {
+            AudioManager.Instance.PlaySFX("clickButton");
+            selectCharacter.Next(selectCharacter.GetCurrentType());
+        });
+
+        previousPlayerSprite.onClick.AddListener(() =>
+        {
+            AudioManager.Instance.PlaySFX("clickButton");
+            selectCharacter.Previous(selectCharacter.GetCurrentType());
+        });
+
+        backMainMenu.onClick.AddListener(() =>
+        {
+            AudioManager.Instance.PlaySFX("clickButton");
+            ShowMainMenu();
+        });
     }
+
     private void InitEventWinBoard()
     {
-        backInRoom.onClick.AddListener(() => ShowRoomPanel(NetworkManager.Instance.CurrentRoomId));
+        backInRoom.onClick.AddListener(() =>
+        {
+            AudioManager.Instance.PlaySFX("clickButton");
+            ShowRoomPanel(NetworkManager.Instance.CurrentRoomId);
+        });
     }
     private void CreateRoom()
     {
@@ -270,7 +341,6 @@ public class UIManager : MonoBehaviour
     }
     public void AddPlayerInRoom(string playerId, string playerName, bool isReady, GameObject player)
     {
-        
         if (roomPanelScript.playersInRoom.ContainsKey(playerId))
         {
             RemovePlayerAndPont(playerId);
@@ -280,28 +350,38 @@ public class UIManager : MonoBehaviour
         GameObject pointSpawnPlayer = pointSpawn.transform.GetChild(0).gameObject;
 
         GameObject objPlayer = Instantiate(player, pointSpawnPlayer.transform);
-        objPlayer.transform.localPosition = new Vector3(0, 0, 0);
-        objPlayer.transform.rotation = Quaternion.Euler(0, 0, 0);
+        objPlayer.transform.localPosition = Vector3.zero;
+        objPlayer.transform.rotation = Quaternion.identity;
         objPlayer.layer = LayerMask.NameToLayer("UI");
-        objPlayer.GetComponent<SpriteRenderer>().sortingLayerName = "UI";
 
-        if (GameManager.Instance.playerSpritesDictionary.TryGetValue(player.GetComponent<SpriteRenderer>().sprite.name, out Sprite sprite))
+        // Setup sprite renderer
+        SpriteRenderer spriteRenderer = objPlayer.GetComponent<SpriteRenderer>();
+        spriteRenderer.sortingLayerName = "UI";
+        spriteRenderer.sprite = player.GetComponent<SpriteRenderer>().sprite;
+
+        // Setup effects properly
+        
+        PlayerEffects sourceEffects = player.GetComponent<PlayerEffects>();
+        PlayerEffects targetEffects = objPlayer.GetComponent<PlayerEffects>();
+
+        if (sourceEffects != null && targetEffects != null)
         {
-            objPlayer.GetComponent<SpriteRenderer>().sprite = sprite;
+            string socketEffectName = sourceEffects.GetSocketEffectName();
+            string trailEffectName = sourceEffects.GetTrailEffectName();
+
+            if (GameManager.Instance.socketEffects.TryGetValue(socketEffectName, out GameObject socketEffect) &&
+                GameManager.Instance.trailEffects.TryGetValue(trailEffectName, out GameObject trailEffect))
+            {
+                targetEffects.SetEffect(socketEffect, trailEffect);
+            }
         }
 
-        PlayerEffects playerEffects = objPlayer.GetComponent<PlayerEffects>();
-        GameObject socketEffect = GameManager.Instance.socketEffects[player.GetComponent<PlayerEffects>().GetSocketEffectName()];
-        GameObject trailEffect = GameManager.Instance.trailEffects[player.GetComponent<PlayerEffects>().GetTrailEffectName()];
-        playerEffects.SetEffect(socketEffect, trailEffect);
-
-        objPlayer.transform.localScale = new Vector3(objPlayer.transform.localScale.x * 20, objPlayer.transform.localScale.y * 20, 0);
+        objPlayer.transform.localScale = new Vector3(20f, 20f, 1f);
 
         roomPanelScript.cardPlayers.Add(playerId, pointSpawn);
         roomPanelScript.playersInRoom.Add(playerId, objPlayer);
 
-        roomPanelScript.SetReadySprite(playerId, isReady);
-        roomPanelScript.SetPlayerNameInCard(playerId, playerName);
+        roomPanelScript.SetInfoCard(playerId, playerName, isReady);
     }
 
     public void RemovePlayerInRoom(string playerId)
@@ -368,17 +448,14 @@ public class UIManager : MonoBehaviour
         int milliseconds = (int)((time * 100) % 100);
         raceTimeText.text = $"{minutes:00}:{seconds:00}.{milliseconds:00}";
     }
-    public void UpdateFinishTimes(Dictionary<string, float> finishTimes)
+    public void UpdateFinishTimes(List<FinishTimeInfo> finishTimes)
     {
         if (finishTimes == null) return;
 
-        List<KeyValuePair<string, float>> sortedPlayers = finishTimes.ToList();
-        sortedPlayers.Sort((pair1, pair2) => pair1.Value.CompareTo(pair2.Value));
-
-        foreach (var player in sortedPlayers)
+        foreach (var finishTime in finishTimes)
         {
-            float time = player.Value;
-            string playerName = roomPanelScript.GetPlayerName(player.Key);
+            float time = finishTime.time;
+            string playerName = roomPanelScript.GetPlayerName(finishTime.playerId);
             winBoardScript.AddPlayerScore(playerName, FormatTime(time));
         }
     }

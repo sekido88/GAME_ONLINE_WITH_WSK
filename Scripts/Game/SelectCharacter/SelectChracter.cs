@@ -70,10 +70,7 @@ public class SelectCharacter : MonoBehaviour
     private void HandlePlayerPreview() {
         currentPlayerPreview.GetComponent<SpriteRenderer>().sprite = playerSprites[currentIndexes["sprite"]];
         PlayerEffects playerEffects = currentPlayerPreview.GetComponent<PlayerController>().GetPlayerEffect();
-        playerEffects.SetSocketEffect(prefabSocketEffects[currentIndexes["socketEffect"]]);
-        playerEffects.SetTrailEffect(prefabTrailEffects[currentIndexes["trailEffect"]]);
-
-
+        playerEffects.SetEffect(prefabSocketEffects[currentIndexes["socketEffect"]],prefabTrailEffects[currentIndexes["trailEffect"]]);
     }
     public void Next(string type)
     {

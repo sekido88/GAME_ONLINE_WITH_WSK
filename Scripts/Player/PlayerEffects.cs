@@ -11,43 +11,14 @@ public class PlayerEffects : MonoBehaviour
     [SerializeField] private GameObject prefabSocketEffect;
     [SerializeField] private GameObject prefabTrailEffect;
 
-    private GameObject objSocketEffect;
-    private GameObject objTrailEffect;
+   private GameObject currentSocketEffect;
+    private GameObject currentTrailEffect;
     private ParticleSystem socketEffect;
     private TrailRenderer trailEffect;
 
     private string socketEffectName;
     private string trailEffectName;
-    private void Awake()
-    {
-        // InitializeEffects();
-        objSocketEffect = transform.GetChild(0).transform.GetChild(0).gameObject;
-        objTrailEffect = transform.GetChild(0).transform.GetChild(1).gameObject;
-    }
 
-    private void InitializeEffects()
-    {
-        InitSocketEffect();
-        InitTrailEffect();
-    }
-
-    private void InitSocketEffect()
-    {
-        if (prefabSocketEffect == null || firePoint == null) return;
-
-        objSocketEffect = Instantiate(prefabSocketEffect, firePoint);
-        socketEffect = objSocketEffect.GetComponent<ParticleSystem>();
-        objSocketEffect.transform.localPosition = Vector3.zero;
-    }
-
-    private void InitTrailEffect()
-    {
-        if (prefabTrailEffect == null || firePoint == null) return;
-
-        objTrailEffect = Instantiate(prefabTrailEffect, firePoint);
-        trailEffect = objTrailEffect.GetComponent<TrailRenderer>();
-        objTrailEffect.transform.localPosition = Vector3.zero;
-    }
 
     public void UpdateEffects(bool isAccelerating)
     {
@@ -59,14 +30,19 @@ public class PlayerEffects : MonoBehaviour
     {
         if (socketEffect == null) return;
 
+      
         if (isAccelerating && !socketEffect.isPlaying)
         {
             socketEffect.Play();
+            AudioManager.Instance.PlaySFX("wind");
         }
         else if (!isAccelerating && socketEffect.isPlaying)
         {
             socketEffect.Stop();
+            AudioManager.Instance.StopSfx();
         }
+
+
     }
 
     private void UpdateTrailEffect(bool isAccelerating)
@@ -78,59 +54,33 @@ public class PlayerEffects : MonoBehaviour
         trailEffect.endColor = trailColor;
     }
 
-    public Transform GetFirePoint()
-    {
-        return firePoint;
-    }
-
-    public void SetSocketEffect(GameObject socketEffect)
-    {
-        if (socketEffect == null) return;
-        socketEffectName = socketEffect.name;
-        prefabSocketEffect = socketEffect;
-        DestroyObjSocketEffect();
-        InitSocketEffect();
-    }
-
-    public void SetTrailEffect(GameObject trailEffect)
-    {
-        if (trailEffect == null) return;
-        trailEffectName = trailEffect.name;
-        prefabTrailEffect = trailEffect;
-        DestroyObjTrailEffect();
-        InitTrailEffect();
-    }
-
-    private void DestroyObjSocketEffect()
-    {
-        if (objSocketEffect != null)
+    public void SetEffect(GameObject socketEffectPrefab, GameObject trailEffectPrefab) 
         {
-            Destroy(objSocketEffect);
-        }
-    }
+            socketEffectName = socketEffect?.name;
+            trailEffectName = trailEffect?.name;
+            
+            if (currentSocketEffect != null) Destroy(currentSocketEffect);
+            if (currentTrailEffect != null) Destroy(currentTrailEffect);
 
-    private void DestroyObjTrailEffect()
-    {
-        if (objTrailEffect != null)
-        {
-            Destroy(objTrailEffect);
-        }
-    }
+            // Store effect names
+            socketEffectName = socketEffectPrefab.name;
+          
+            // Instantiate new effects
+            currentSocketEffect = Instantiate(socketEffectPrefab, firePoint);
+            currentTrailEffect = Instantiate(trailEffectPrefab, firePoint);
+            
+            // Setup components
+            socketEffect = currentSocketEffect.GetComponent<ParticleSystem>();
+            trailEffect = currentTrailEffect.GetComponent<TrailRenderer>();
 
-    private void OnDestroy()
-    {
-        DestroyObjSocketEffect();
-        DestroyObjTrailEffect();
-    }
-    public void SetEffect(GameObject socketEffect, GameObject trailEffect) {
-        for(int i = 0 ;i < transform.GetChild(0).childCount ;i++) {
-            Destroy(transform.GetChild(0).transform.GetChild(i).gameObject);
+            // Configure transforms
+            currentSocketEffect.transform.localPosition = Vector3.zero;
+            currentTrailEffect.transform.localPosition = Vector3.zero;
+
+            // Ensure effects are enabled
+            currentSocketEffect.SetActive(true);
+            currentTrailEffect.SetActive(true);
         }
-        prefabSocketEffect = socketEffect;
-        prefabTrailEffect = trailEffect;
-        InitSocketEffect();
-        InitTrailEffect();
-    }
 
     public string GetSocketEffectName() => socketEffectName;
     public string GetTrailEffectName() => trailEffectName;

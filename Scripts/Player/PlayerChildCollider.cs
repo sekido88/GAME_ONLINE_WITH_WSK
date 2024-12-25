@@ -15,6 +15,7 @@ public class PlayerChildCollider : MonoBehaviour
         if (collision.gameObject.CompareTag("Wall"))
         {
             playerMovement.HandleWallCollision(collision);
+            AudioManager.Instance.PlaySFX("crash");
         }
     }
 }

@@ -18,7 +18,7 @@ public class NetworkMessage
     public string error;
     public int currentCheckpoint;
     public float currentTime;
-    public Dictionary<string, float> finishTimes;
+    public List<FinishTimeInfo> finishTimes  = new List<FinishTimeInfo>();
     public bool isReady;
     public bool isFinished;
     public List<PlayerInfo> players = new List<PlayerInfo>();
